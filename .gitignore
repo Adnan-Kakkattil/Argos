@@ -12,3 +12,16 @@ backend/api/__pycache__/
 backend/api/v1/__pycache__/
 backend/api/v1/endpoints/__pycache__/
 
+PrismTrackAgent/build/
+
+PrismTrackAgent/PrismTrackAgent.spec
+PrismTrackAgent/PrismTrackAgent.pyc
+PrismTrackAgent/PrismTrackAgent.pyo
+PrismTrackAgent/PrismTrackAgent.pyd
+PrismTrackAgent/PrismTrackAgent.pyw
+PrismTrackAgent/PrismTrackAgent.pyz
+PrismTrackAgent/PrismTrackAgent.pyz.pyc
+PrismTrackAgent/PrismTrackAgent.pyz.pyo
+PrismTrackAgent/PrismTrackAgent.pyz.pyd
+PrismTrackAgent/PrismTrackAgent.pyz.pyw
+PrismTrackAgent/__pycache__/

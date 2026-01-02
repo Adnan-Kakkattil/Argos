@@ -60,3 +60,21 @@ class AgentListResponse(BaseModel):
     agents: List[AgentResponse]
     total: int
 
+class TelemetryRecord(BaseModel):
+    id: int
+    agent_id: int
+    window_title: Optional[str] = None
+    process_name: Optional[str] = None
+    timestamp: datetime
+    is_idle: bool = False
+    screenshot_url: Optional[str] = None
+    created_at: datetime
+    
+    class Config:
+        from_attributes = True
+
+class TelemetryListResponse(BaseModel):
+    agent_id: int
+    telemetry: List[TelemetryRecord]
+    total: int
+

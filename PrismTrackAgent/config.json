@@ -1,0 +1,7 @@
+{
+  "org_id": "S18NZD4",
+  "api_base": "http://localhost:8000/api/v1",
+  "agent_token": "7cdJWFA2GXSlOvFTjTwODyKEAMDKhOTfBqph3rEJwkQ",
+  "heartbeat_interval": 30,
+  "telemetry_interval": 30,
+  "idle_threshold_seconds": 300

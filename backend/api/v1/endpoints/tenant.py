@@ -15,6 +15,7 @@ from backend.models.user import User
 from backend.schemas.company import CompanyCreate, CompanyUpdate, CompanyResponse, CompanyListResponse
 from backend.schemas.branch import BranchCreate, BranchUpdate, BranchResponse, BranchListResponse
 from backend.schemas.user import UserCreate, UserUpdate, UserResponse, UserListResponse
+from backend.schemas.agent import AgentResponse, AgentListResponse, TelemetryListResponse
 
 router = APIRouter()
 
@@ -472,6 +473,160 @@ async def delete_user(
     db.commit()
     
     return None
+
+# ==================== Agent Management ====================
+
+@router.get("/agents", response_model=AgentListResponse, tags=["tenant"])
+async def list_tenant_agents(
+    skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(get_db),
+    current_tenant: Tenant = Depends(get_current_tenant)
+):
+    """
+    List all agents for the current tenant
+    
+    Returns agents for tenant org_id, all company org_ids, and all branch org_ids.
+    """
+    from backend.models.agent import Agent
+    
+    # Get all org_ids for this tenant
+    tenant_org_id = current_tenant.tenant_org_id
+    
+    # Get company org_ids
+    companies = db.query(Company).filter(
+        Company.tenant_id == current_tenant.id,
+        Company.is_active == True
+    ).all()
+    company_org_ids = [c.company_org_id for c in companies]
+    
+    # Get branch org_ids
+    branches = db.query(Branch).join(Company).filter(
+        Company.tenant_id == current_tenant.id,
+        Branch.is_active == True
+    ).all()
+    branch_org_ids = [b.branch_org_id for b in branches]
+    
+    # Get all agents matching any of these org_ids
+    all_org_ids = [tenant_org_id] + company_org_ids + branch_org_ids
+    
+    query = db.query(Agent).filter(Agent.org_id.in_(all_org_ids))
+    
+    agents = query.order_by(Agent.last_seen.desc()).offset(skip).limit(limit).all()
+    total = query.count()
+    
+    return {
+        "agents": agents,
+        "total": total
+    }
+
+@router.get("/agents/{agent_id}", response_model=AgentResponse, tags=["tenant"])
+async def get_tenant_agent(
+    agent_id: int,
+    db: Session = Depends(get_db),
+    current_tenant: Tenant = Depends(get_current_tenant)
+):
+    """
+    Get agent details for a specific agent (must belong to tenant)
+    """
+    from backend.models.agent import Agent
+    
+    # Get agent
+    agent = db.query(Agent).filter(Agent.id == agent_id).first()
+    
+    if not agent:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Agent not found"
+        )
+    
+    # Verify agent belongs to tenant
+    tenant_org_id = current_tenant.tenant_org_id
+    
+    # Get company org_ids
+    companies = db.query(Company).filter(
+        Company.tenant_id == current_tenant.id,
+        Company.is_active == True
+    ).all()
+    company_org_ids = [c.company_org_id for c in companies]
+    
+    # Get branch org_ids
+    branches = db.query(Branch).join(Company).filter(
+        Company.tenant_id == current_tenant.id,
+        Branch.is_active == True
+    ).all()
+    branch_org_ids = [b.branch_org_id for b in branches]
+    
+    all_org_ids = [tenant_org_id] + company_org_ids + branch_org_ids
+    
+    if agent.org_id not in all_org_ids:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Agent does not belong to this tenant"
+        )
+    
+    return agent
+
+@router.get("/agents/{agent_id}/telemetry", response_model=TelemetryListResponse, tags=["tenant"])
+async def get_agent_telemetry(
+    agent_id: int,
+    skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(get_db),
+    current_tenant: Tenant = Depends(get_current_tenant)
+):
+    """
+    Get telemetry data for a specific agent
+    
+    Returns recent telemetry records ordered by timestamp (newest first).
+    """
+    from backend.models.agent import Agent
+    from backend.models.telemetry import Telemetry
+    
+    # Get and verify agent
+    agent = db.query(Agent).filter(Agent.id == agent_id).first()
+    
+    if not agent:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Agent not found"
+        )
+    
+    # Verify agent belongs to tenant
+    tenant_org_id = current_tenant.tenant_org_id
+    
+    companies = db.query(Company).filter(
+        Company.tenant_id == current_tenant.id,
+        Company.is_active == True
+    ).all()
+    company_org_ids = [c.company_org_id for c in companies]
+    
+    branches = db.query(Branch).join(Company).filter(
+        Company.tenant_id == current_tenant.id,
+        Branch.is_active == True
+    ).all()
+    branch_org_ids = [b.branch_org_id for b in branches]
+    
+    all_org_ids = [tenant_org_id] + company_org_ids + branch_org_ids
+    
+    if agent.org_id not in all_org_ids:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Agent does not belong to this tenant"
+        )
+    
+    # Get telemetry data
+    telemetry = db.query(Telemetry).filter(
+        Telemetry.agent_id == agent_id
+    ).order_by(Telemetry.timestamp.desc()).offset(skip).limit(limit).all()
+    
+    total = db.query(Telemetry).filter(Telemetry.agent_id == agent_id).count()
+    
+    return {
+        "agent_id": agent_id,
+        "telemetry": telemetry,
+        "total": total
+    }
 
 # ==================== Agent Download ====================
 
