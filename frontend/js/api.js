@@ -88,7 +88,12 @@ class API {
         localStorage.removeItem('token');
         localStorage.removeItem('refreshToken');
         localStorage.removeItem('userType');
+        // Redirect to login page
         window.location.hash = '#login';
+        // Show login view if app is available
+        if (window.app) {
+            window.app.showLogin();
+        }
     }
 
     // Authentication
@@ -196,4 +201,6 @@ class API {
 }
 
 const api = new API();
+// Make api globally accessible for onclick handlers
+window.api = api;
 

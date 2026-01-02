@@ -83,7 +83,7 @@ class App {
                 <button onclick="app.showCreateTenant()" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">
                     Create Tenant
                 </button>
-                <button onclick="api.logout()" class="text-gray-600 hover:text-gray-900">
+                <button onclick="window.api.logout()" class="text-gray-600 hover:text-gray-900">
                     Logout
                 </button>
             `;
@@ -151,7 +151,7 @@ class App {
                 <button onclick="app.showCreateUser()" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">
                     Create User
                 </button>
-                <button onclick="api.logout()" class="text-gray-600 hover:text-gray-900">
+                <button onclick="window.api.logout()" class="text-gray-600 hover:text-gray-900">
                     Logout
                 </button>
             `;
@@ -552,4 +552,6 @@ class App {
 }
 
 const app = new App();
+// Make app globally accessible for onclick handlers
+window.app = app;
 
