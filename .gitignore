@@ -1,0 +1,14 @@
+backend/__pycache__/
+database/__pycache__/
+frontend/__pycache__/
+agent/__pycache__/
+installer/__pycache__/
+requirements.txt
+.env
+backend/schemas/__pycache__/
+backend/models/__pycache__/
+backend/core/__pycache__/
+backend/api/__pycache__/
+backend/api/v1/__pycache__/
+backend/api/v1/endpoints/__pycache__/
+

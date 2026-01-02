@@ -1,0 +1,22 @@
+i liek to build aprotoypr for project called PrismTrack its a employee trackign system its a multi tenant appclation 
+
+
+first i need a superadmin page were i can create tenant i haev attached a screenshto of the platform admin means the suepradmin 
+
+workflow needed by the client 
+
+then need to using the created teantn credentail login into 
+
+client admin 
+
+in it  feature to downlaod teh agent
+
+when platform admin create a new taenant gernate a 5 to 8 chartater ord id for speciff to tenenat 
+
+in a tenant there will be multiple companeis so each compny need the org id becoase for that comapny we need to isntall that agent for specfic to that comapny then we might have multiple bracnhes same for brances so need create that org id 
+
+using python fastapi html for ui  mysql as database agent and msi isntaller in rust
+
+create a implemtantion plan.md and check list to build the prototyp
+
+refer @idea.txt  tech deatils
