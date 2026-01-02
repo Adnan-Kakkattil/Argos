@@ -3,6 +3,8 @@ PrismTrack - Main FastAPI Application
 """
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from pathlib import Path
 from backend.core.config import settings
 from backend.api.v1 import api_router
 
@@ -13,6 +15,13 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc"
 )
+
+# Mount static files directory for agent downloads
+static_dir = Path(__file__).parent / "static"
+static_dir.mkdir(exist_ok=True)
+agents_dir = static_dir / "agents"
+agents_dir.mkdir(exist_ok=True)
+app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
 
 # Get CORS origins from settings
 cors_origins = settings.get_cors_origins()

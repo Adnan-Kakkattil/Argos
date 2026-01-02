@@ -5,3 +5,4 @@
   "heartbeat_interval": 30,
   "telemetry_interval": 30,
   "idle_threshold_seconds": 300
+}

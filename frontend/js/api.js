@@ -190,13 +190,93 @@ class API {
         return this.request('/tenant/org-ids');
     }
 
+    async getTenantAgents(skip = 0, limit = 100) {
+        return this.request(`/tenant/agents?skip=${skip}&limit=${limit}`);
+    }
+
+    async getTenantAgent(agentId) {
+        return this.request(`/tenant/agents/${agentId}`);
+    }
+
+    async getAgentTelemetry(agentId, skip = 0, limit = 100) {
+        return this.request(`/tenant/agents/${agentId}/telemetry?skip=${skip}&limit=${limit}`);
+    }
+
     async downloadAgent(orgId) {
         const response = await fetch(`${API_BASE}/tenant/download-agent/${orgId}`, {
             headers: {
                 'Authorization': `Bearer ${this.token}`
             }
         });
-        return response.json();
+        
+        if (!response.ok) {
+            const error = await response.json().catch(() => ({ detail: 'Download failed' }));
+            throw new Error(error.detail || 'Download failed');
+        }
+        
+        // Get filename from Content-Disposition header or use default
+        const contentDisposition = response.headers.get('Content-Disposition');
+        let filename = `PrismTrack_Agent_${orgId}.msi`;
+        
+        if (contentDisposition) {
+            // Try multiple patterns to extract filename
+            let extractedFilename = null;
+            
+            // Pattern 1: filename*=UTF-8''value (RFC 5987 - preferred)
+            const rfc5987Match = contentDisposition.match(/filename\*=UTF-8''([^;]+)/i);
+            if (rfc5987Match && rfc5987Match[1]) {
+                try {
+                    extractedFilename = decodeURIComponent(rfc5987Match[1]);
+                } catch (e) {
+                    // If decoding fails, try pattern 2
+                }
+            }
+            
+            // Pattern 2: filename="value" or filename=value (fallback)
+            if (!extractedFilename) {
+                const standardMatch = contentDisposition.match(/filename\*?=['"]?([^'";\s]+)['"]?/i);
+                if (standardMatch && standardMatch[1]) {
+                    extractedFilename = standardMatch[1];
+                }
+            }
+            
+            if (extractedFilename) {
+                // Clean the filename
+                extractedFilename = extractedFilename.trim();
+                // Remove any trailing underscores, spaces, or other unwanted characters
+                extractedFilename = extractedFilename.replace(/[_\s]+$/, '');
+                // Fix .msi_ to .msi (handle multiple underscores)
+                extractedFilename = extractedFilename.replace(/\.msi_+$/, '.msi');
+                // Ensure it ends with .msi
+                if (extractedFilename.endsWith('.msi')) {
+                    filename = extractedFilename;
+                }
+            }
+        }
+        
+        // Final cleanup - ensure filename is properly formatted
+        filename = filename.trim();
+        // Remove any trailing underscores, spaces, or other characters
+        filename = filename.replace(/[_\s]+$/, '');
+        // Fix .msi_ to .msi (handle multiple underscores)
+        filename = filename.replace(/\.msi_+$/, '.msi');
+        // Ensure it ends with .msi
+        if (!filename.endsWith('.msi')) {
+            filename = `${filename.replace(/\.msi_?$/, '')}.msi`;
+        }
+        
+        // Download the file
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        
+        return { success: true, filename };
     }
 }
 

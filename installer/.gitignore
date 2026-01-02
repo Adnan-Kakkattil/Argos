@@ -1,0 +1,13 @@
+# Rust build artifacts
+target/
+Cargo.lock
+
+# WiX build artifacts
+*.wixobj
+*.wixpdb
+*.cab
+media*.cab
+
+# MSI installer (keep in repo, but can be regenerated)
+# PrismTrackAgent.msi
+

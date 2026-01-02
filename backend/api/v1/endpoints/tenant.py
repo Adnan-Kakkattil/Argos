@@ -701,18 +701,25 @@ async def download_agent(
     Download agent MSI for a specific org_id
     
     Verifies that the org_id belongs to the tenant before allowing download.
-    For now, returns a placeholder response. Actual MSI generation will be implemented later.
+    Returns the MSI installer file with embedded org_id configuration.
     """
-    from fastapi.responses import JSONResponse
+    from fastapi.responses import FileResponse
+    from pathlib import Path
+    import shutil
+    import zipfile
+    import json
+    import tempfile
     
     # Verify org_id belongs to tenant
     valid_org_id = False
     org_name = ""
+    org_type = None
     
     # Check tenant org_id
     if current_tenant.tenant_org_id == org_id:
         valid_org_id = True
         org_name = current_tenant.name
+        org_type = "TENANT"
     
     # Check company org_ids
     if not valid_org_id:
@@ -724,6 +731,7 @@ async def download_agent(
         if company:
             valid_org_id = True
             org_name = company.name
+            org_type = "COMPANY"
     
     # Check branch org_ids
     if not valid_org_id:
@@ -735,6 +743,7 @@ async def download_agent(
         if branch:
             valid_org_id = True
             org_name = branch.name
+            org_type = "BRANCH"
     
     if not valid_org_id:
         raise HTTPException(
@@ -742,15 +751,41 @@ async def download_agent(
             detail="Org ID not found or does not belong to this tenant"
         )
     
-    # TODO: Implement actual MSI file generation and download
-    # For now, return a placeholder response
-    return JSONResponse(
-        content={
-            "message": "Agent download endpoint",
-            "org_id": org_id,
-            "org_name": org_name,
-            "filename": f"PrismTrack_Agent_{org_id}.msi",
-            "note": "MSI generation will be implemented in Phase 5"
+    # Get paths - go up from backend/api/v1/endpoints/tenant.py to project root
+    # tenant.py -> endpoints -> v1 -> api -> backend -> project_root
+    # So we need to go up 4 levels to get to backend, then static is at backend/static/agents
+    current_file = Path(__file__)
+    # Go up 4 levels: endpoints -> v1 -> api -> backend
+    backend_dir = current_file.parent.parent.parent.parent
+    static_dir = backend_dir / "static" / "agents"
+    msi_template = static_dir / "PrismTrackAgent.msi"
+    
+    # Check if files exist
+    if not msi_template.exists():
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="MSI template not found. Please ensure PrismTrackAgent.msi exists in backend/static/agents/"
+        )
+    
+    # Return the MSI file for download
+    # The MSI contains config.json template - installer script will update it with org_id
+    # The org_id is embedded in the filename for user reference
+    filename = f"PrismTrack_Agent_{org_id}.msi"
+    
+    # Ensure filename is clean (no trailing spaces or underscores)
+    filename = filename.strip()
+    
+    # Use proper Content-Disposition header format
+    # Using both standard and RFC 2231 format for maximum browser compatibility
+    import urllib.parse
+    encoded_filename = urllib.parse.quote(filename)
+    
+    return FileResponse(
+        path=str(msi_template),
+        filename=filename,
+        media_type="application/octet-stream",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"; filename*=UTF-8\'\'{encoded_filename}'
         }
     )
 

@@ -1,74 +1,88 @@
-# PrismTrack Agent MSI Installer
+# PrismTrack Agent MSI Installer (Rust + cargo-wix)
 
-Windows MSI installer for PrismTrack Agent that:
-1. Downloads agent.zip from backend
-2. Extracts PrismTrackAgent.exe and config.json
-3. Collects system information
-4. Registers agent with backend
-5. Installs and runs PrismTrackAgent.exe
+Rust-based MSI installer builder using `cargo-wix` for PrismTrack Agent.
 
 ## Requirements
 
-- Windows 10/11
-- WiX Toolset 3.11+ (for building MSI)
-- OR Python with msilib (for Python-based MSI creation)
+- Rust 1.70+ (install from https://rustup.rs/)
+- WiX Toolset 3.11+ (install from https://wixtoolset.org/)
+- cargo-wix (install with: `cargo install cargo-wix`)
+- PrismTrackAgent.exe built (run `python build_exe.py` in PrismTrackAgent directory)
 
-## Installation Methods
+## Building the MSI Installer
 
-### Method 1: WiX Toolset (Recommended)
+### Step 1: Install cargo-wix (if not already installed)
 
-1. Install WiX Toolset from: https://wixtoolset.org/
-2. Build MSI:
-   ```bash
-   candle PrismTrackAgent.wxs
-   light PrismTrackAgent.wixobj -out PrismTrackAgent.msi
-   ```
+```bash
+cargo install cargo-wix
+```
 
-### Method 2: Python msilib (Simpler)
+### Step 2: Build the MSI
 
-1. Run build script:
-   ```bash
-   python create_msi.py
-   ```
+```bash
+cd installer
+cargo wix
+```
 
-## MSI Installer Workflow
+The MSI installer will be created as:
+- `installer/PrismTrackAgent.msi` (or `target/wix/PrismTrackAgent.msi`)
 
-1. **Pre-Installation Checks**
-   - Verify Windows version
-   - Check admin privileges
-   - Check if agent already installed
+## How It Works
 
-2. **Download Agent Package**
-   - Download agent.zip from: `{API_BASE}/api/v1/tenant/download-agent-package/{org_id}`
-   - Save to: `%TEMP%\PrismTrackAgent.zip`
+The `cargo-wix` tool:
+1. Compiles the Rust project (dummy binary for cargo-wix)
+2. Uses WiX Toolset to compile `wix/main.wxs`
+3. Links the MSI installer with all files
+4. Creates `PrismTrackAgent.msi`
 
-3. **Extract Agent Package**
-   - Extract to: `C:\Program Files\PrismTrack\Agent\`
-   - Files: `PrismTrackAgent.exe`, `config.json`
+## MSI Installer Features
 
-4. **Collect System Information**
-   - Hardware UUID (from registry)
-   - Machine name
-   - Username
-   - Hostname
-   - UPN email
-
-5. **Register Agent**
-   - Call: `POST /api/v1/agent/register`
-   - Save agent_token to config.json
-
-6. **Install as Service** (Optional)
-   - Install PrismTrackAgent.exe as Windows Service
-   - Set to auto-start
-
-7. **Post-Installation**
-   - Show completion message
-   - Create desktop shortcut (optional)
+- Installs to: `C:\Program Files\PrismTrack\Agent\`
+- Includes:
+  - `PrismTrackAgent.exe` (Python executable)
+  - `config.json` (configuration file)
+  - `installer_script.ps1` (PowerShell installation script)
+- Custom action: Runs PowerShell script after installation
+- PowerShell script:
+  - Collects system information (Hardware UUID, username, hostname, UPN)
+  - Registers agent with backend API
+  - Saves agent_token to config.json
+  - Starts PrismTrackAgent.exe
 
 ## Files
 
-- `PrismTrackAgent.wxs` - WiX source file
-- `create_msi.py` - Python script to create MSI
+- `Cargo.toml` - Rust project configuration with cargo-wix metadata
+- `src/main.rs` - Dummy Rust binary (not included in MSI)
+- `wix/main.wxs` - WiX source file defining MSI structure
 - `installer_script.ps1` - PowerShell installation script
-- `build_msi.bat` - Build script for MSI
 
+## Customization
+
+Edit `wix/main.wxs` to customize:
+- Installation directory
+- Files to include
+- Custom actions
+- UI appearance
+
+## Troubleshooting
+
+### cargo-wix not found
+```bash
+cargo install cargo-wix
+```
+
+### WiX Toolset not found
+- Install from: https://wixtoolset.org/
+- Add to PATH or restart terminal
+
+### PrismTrackAgent.exe not found
+- Build the executable first:
+  ```bash
+  cd ../PrismTrackAgent
+  python build_exe.py
+  ```
+
+### Build errors
+- Ensure all source files exist
+- Check file paths in `wix/main.wxs`
+- Verify WiX Toolset is properly installed
