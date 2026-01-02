@@ -14,13 +14,19 @@ app = FastAPI(
     redoc_url="/redoc"
 )
 
-# CORS Middleware
+# Get CORS origins from settings
+cors_origins = settings.get_cors_origins()
+
+# Add CORS middleware - MUST be added before routes
+# FastAPI's CORSMiddleware automatically handles OPTIONS preflight requests
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=cors_origins,  # List of allowed origins (not "*" when credentials=True)
+    allow_credentials=True,  # Allow cookies/credentials
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],  # Allowed HTTP methods
+    allow_headers=["*"],  # Allow all headers
+    expose_headers=["*"],  # Expose all headers to frontend
+    max_age=3600,  # Cache preflight requests for 1 hour
 )
 
 # Include API routes

@@ -38,7 +38,7 @@ class Settings(BaseSettings):
     DEBUG: bool = os.getenv("DEBUG", "True").lower() == "true"
     API_V1_PREFIX: str = os.getenv("API_V1_PREFIX", "/api/v1")
     
-    # CORS - stored as string, parsed as list
+    # CORS - parse from comma-separated string
     CORS_ORIGINS_STR: str = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:8000")
     
     @field_validator("CORS_ORIGINS_STR", mode="before")
@@ -47,10 +47,27 @@ class Settings(BaseSettings):
         """Allow CORS_ORIGINS to be set from environment"""
         return v
     
-    @property
-    def CORS_ORIGINS(self) -> List[str]:
+    def get_cors_origins(self) -> List[str]:
         """Parse CORS origins from comma-separated string"""
-        return [origin.strip() for origin in self.CORS_ORIGINS_STR.split(",") if origin.strip()]
+        if self.CORS_ORIGINS_STR == "*":
+            # If "*" is set, return default list for development
+            # Note: Cannot use "*" when allow_credentials=True, must specify exact origins
+            return [
+                "http://localhost:3000",
+                "http://localhost:8000", 
+                "http://localhost:8080",
+                "http://127.0.0.1:8080",
+                "http://127.0.0.1:3000",
+                "http://127.0.0.1:8000"
+            ]
+        # Split by comma and clean up whitespace
+        origins = [origin.strip() for origin in self.CORS_ORIGINS_STR.split(",") if origin.strip()]
+        # Ensure localhost:8080 is always included for development
+        if "http://localhost:8080" not in origins:
+            origins.append("http://localhost:8080")
+        if "http://127.0.0.1:8080" not in origins:
+            origins.append("http://127.0.0.1:8080")
+        return origins
     
     class Config:
         env_file = ".env"
