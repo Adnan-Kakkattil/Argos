@@ -21,3 +21,5 @@ class Telemetry(Base):
     # Relationships
     agent = relationship("Agent", back_populates="telemetry")
 
+
+

@@ -25,6 +25,7 @@ class Agent(Base):
     machine_name = Column(String(255), nullable=False)
     hardware_uuid = Column(String(255), unique=True, index=True, nullable=False)
     agent_token = Column(String(255), unique=True, index=True, nullable=False)
+    current_version = Column(String(50), nullable=True, index=True)  # Track agent version
     last_seen = Column(DateTime(timezone=True), server_default=func.now())
     status = Column(SQLEnum(AgentStatus), default=AgentStatus.OFFLINE, nullable=False)
     registered_at = Column(DateTime(timezone=True), server_default=func.now())

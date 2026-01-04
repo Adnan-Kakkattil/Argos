@@ -63,6 +63,13 @@ class App {
                     this.showLogin();
                 }
                 break;
+            case 'versions':
+                if (this.api.userType === 'platform_admin') {
+                    this.showVersions();
+                } else {
+                    this.showLogin();
+                }
+                break;
             case 'agents':
                 if (this.api.userType === 'tenant') {
                     this.showAgents();
@@ -101,6 +108,9 @@ class App {
             document.getElementById('nav-buttons').innerHTML = `
                 <button onclick="app.showCreateTenant()" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">
                     Create Tenant
+                </button>
+                <button onclick="app.showVersions()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+                    Manage Versions
                 </button>
                 <button onclick="window.api.logout()" class="text-gray-600 hover:text-gray-900">
                     Logout
@@ -881,6 +891,165 @@ class App {
             "'": '&#039;'
         };
         return text.replace(/[&<>"']/g, m => map[m]);
+    }
+
+    async showVersions() {
+        this.currentView = 'versions';
+        try {
+            const data = await this.api.getVersions();
+            document.getElementById('content').innerHTML = this.getVersionsHTML(data);
+            document.getElementById('nav-buttons').innerHTML = `
+                <button onclick="app.showCreateVersion()" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">
+                    Upload New Version
+                </button>
+                <button onclick="app.showPlatformDashboard()" class="text-gray-600 hover:text-gray-900">
+                    ← Back to Dashboard
+                </button>
+            `;
+        } catch (error) {
+            this.showError('Failed to load versions: ' + error.message);
+        }
+    }
+
+    showCreateVersion() {
+        document.getElementById('content').innerHTML = this.getCreateVersionHTML();
+        document.getElementById('nav-buttons').innerHTML = `
+            <button onclick="app.showVersions()" class="text-gray-600 hover:text-gray-900">
+                ← Back to Versions
+            </button>
+        `;
+    }
+
+    async handleCreateVersion(event) {
+        event.preventDefault();
+        const formData = new FormData(event.target);
+        const versionNumber = formData.get('version_number');
+        const changelog = formData.get('changelog');
+        const file = formData.get('file');
+
+        if (!file || !file.name.endsWith('.zip')) {
+            alert('Please select a .zip file');
+            return;
+        }
+
+        try {
+            await this.api.createVersion(versionNumber, changelog, file);
+            alert('Version uploaded successfully!');
+            this.showVersions();
+        } catch (error) {
+            alert('Failed to upload version: ' + error.message);
+        }
+    }
+
+    async handleDeleteVersion(versionId) {
+        if (!confirm('Are you sure you want to delete this version?')) {
+            return;
+        }
+
+        try {
+            await this.api.deleteVersion(versionId);
+            alert('Version deleted successfully');
+            this.showVersions();
+        } catch (error) {
+            alert('Failed to delete version: ' + error.message);
+        }
+    }
+
+    getVersionsHTML(data) {
+        const versions = data.versions || [];
+        return `
+            <div class="fade-in">
+                <h2 class="text-3xl font-bold mb-6">Agent Version Management</h2>
+                
+                <div class="bg-white shadow rounded-lg p-6">
+                    <h3 class="text-xl font-semibold mb-4">All Versions (${data.total})</h3>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Version</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Changelog</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">File Size</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Created</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                ${versions.map(version => `
+                                    <tr>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <span class="font-semibold">${version.version_number}</span>
+                                            ${version.is_latest ? '<span class="ml-2 px-2 py-1 text-xs bg-green-100 text-green-800 rounded">Latest</span>' : ''}
+                                        </td>
+                                        <td class="px-6 py-4">
+                                            <div class="max-w-md truncate" title="${this.escapeHtml(version.changelog)}">
+                                                ${this.escapeHtml(version.changelog.substring(0, 100))}${version.changelog.length > 100 ? '...' : ''}
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">${(version.file_size / 1024 / 1024).toFixed(2)} MB</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <span class="px-2 py-1 text-xs rounded ${version.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                                                ${version.is_active ? 'Active' : 'Inactive'}
+                                            </span>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">${new Date(version.created_at).toLocaleDateString()}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <button onclick="app.handleDeleteVersion(${version.id})" class="text-red-600 hover:text-red-900">
+                                                Delete
+                                            </button>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    getCreateVersionHTML() {
+        return `
+            <div class="fade-in max-w-2xl mx-auto">
+                <h2 class="text-3xl font-bold mb-6">Upload New Agent Version</h2>
+                
+                <div class="bg-white shadow rounded-lg p-6">
+                    <form onsubmit="app.handleCreateVersion(event)" enctype="multipart/form-data">
+                        <div class="mb-4">
+                            <label class="block text-gray-700 text-sm font-bold mb-2">Version Number *</label>
+                            <input type="text" name="version_number" required 
+                                   placeholder="e.g., 1.0.1, 2.0.0" 
+                                   class="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <p class="text-xs text-gray-500 mt-1">Use semantic versioning (e.g., 1.0.1)</p>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label class="block text-gray-700 text-sm font-bold mb-2">Changelog *</label>
+                            <textarea name="changelog" required rows="6" 
+                                      placeholder="Describe what's new in this version..."
+                                      class="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+                        </div>
+                        
+                        <div class="mb-6">
+                            <label class="block text-gray-700 text-sm font-bold mb-2">Agent ZIP File *</label>
+                            <input type="file" name="file" accept=".zip" required 
+                                   class="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <p class="text-xs text-gray-500 mt-1">Upload a ZIP file containing the agent executable and files</p>
+                        </div>
+                        
+                        <div class="flex gap-4">
+                            <button type="submit" class="flex-1 bg-indigo-600 text-white py-2 rounded hover:bg-indigo-700">
+                                Upload Version
+                            </button>
+                            <button type="button" onclick="app.showVersions()" class="flex-1 bg-gray-300 text-gray-700 py-2 rounded hover:bg-gray-400">
+                                Cancel
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        `;
     }
 }
 

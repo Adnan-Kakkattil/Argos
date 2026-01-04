@@ -29,3 +29,5 @@ class CompanyListResponse(BaseModel):
     companies: List[CompanyResponse]
     total: int
 
+
+

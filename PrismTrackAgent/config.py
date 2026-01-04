@@ -12,13 +12,16 @@ class Config:
     
     def __init__(self, org_id: str, api_base: str, agent_token: Optional[str] = None,
                  heartbeat_interval: int = 30, telemetry_interval: int = 30,
-                 idle_threshold_seconds: int = 300):
+                 idle_threshold_seconds: int = 300, current_version: str = "1.0.0",
+                 update_check_interval: int = 3600):
         self.org_id = org_id
         self.api_base = api_base
         self.agent_token = agent_token
         self.heartbeat_interval = heartbeat_interval
         self.telemetry_interval = telemetry_interval
         self.idle_threshold_seconds = idle_threshold_seconds
+        self.current_version = current_version
+        self.update_check_interval = update_check_interval  # Check for updates every hour
     
     @staticmethod
     def get_config_path() -> Path:
@@ -50,7 +53,9 @@ class Config:
                     agent_token=data.get('agent_token'),
                     heartbeat_interval=data.get('heartbeat_interval', 30),
                     telemetry_interval=data.get('telemetry_interval', 30),
-                    idle_threshold_seconds=data.get('idle_threshold_seconds', 300)
+                    idle_threshold_seconds=data.get('idle_threshold_seconds', 300),
+                    current_version=data.get('current_version', '1.0.0'),
+                    update_check_interval=data.get('update_check_interval', 3600)
                 )
             except Exception as e:
                 print(f"Error loading config: {e}")
@@ -72,7 +77,9 @@ class Config:
             'agent_token': self.agent_token,
             'heartbeat_interval': self.heartbeat_interval,
             'telemetry_interval': self.telemetry_interval,
-            'idle_threshold_seconds': self.idle_threshold_seconds
+            'idle_threshold_seconds': self.idle_threshold_seconds,
+            'current_version': self.current_version,
+            'update_check_interval': self.update_check_interval
         }
         
         try:

@@ -20,3 +20,5 @@ class Company(Base):
     tenant = relationship("Tenant", back_populates="companies")
     branches = relationship("Branch", back_populates="company", cascade="all, delete-orphan")
 
+
+

@@ -33,3 +33,5 @@ class BranchListResponse(BaseModel):
     branches: List[BranchResponse]
     total: int
 
+
+

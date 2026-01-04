@@ -278,6 +278,51 @@ class API {
         
         return { success: true, filename };
     }
+
+    // Version Management (Platform Admin only)
+    async getVersions(skip = 0, limit = 100) {
+        return this.request(`/version/versions?skip=${skip}&limit=${limit}`);
+    }
+
+    async getVersion(versionId) {
+        return this.request(`/version/versions/${versionId}`);
+    }
+
+    async createVersion(versionNumber, changelog, file) {
+        const formData = new FormData();
+        formData.append('version_number', versionNumber);
+        formData.append('changelog', changelog);
+        formData.append('file', file);
+
+        const response = await fetch(`${API_BASE}/version/versions`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${this.token}`
+            },
+            body: formData,
+            credentials: 'include'
+        });
+
+        if (!response.ok) {
+            const error = await response.json().catch(() => ({ detail: 'Upload failed' }));
+            throw new Error(error.detail || 'Upload failed');
+        }
+
+        return response.json();
+    }
+
+    async updateVersion(versionId, versionData) {
+        return this.request(`/version/versions/${versionId}`, {
+            method: 'PUT',
+            body: JSON.stringify(versionData)
+        });
+    }
+
+    async deleteVersion(versionId) {
+        return this.request(`/version/versions/${versionId}`, {
+            method: 'DELETE'
+        });
+    }
 }
 
 const api = new API();

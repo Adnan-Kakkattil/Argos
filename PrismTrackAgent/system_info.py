@@ -126,3 +126,5 @@ class SystemInfo:
         # Fallback: construct email from username and hostname
         return f"{clean_username}@{hostname}"
 
+
+

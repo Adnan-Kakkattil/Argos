@@ -11,6 +11,7 @@ from system_info import SystemInfo
 from registration import register_agent
 from tracking import ProductivityTracker
 from api_client import ApiClient
+from update_checker import UpdateChecker
 
 def print_banner():
     """Print startup banner"""
@@ -85,6 +86,14 @@ async def main():
             idle_threshold_seconds=config.idle_threshold_seconds
         )
         
+        # Initialize update checker
+        update_checker = UpdateChecker(
+            api_base=config.api_base,
+            agent_token=config.agent_token,
+            current_version=config.current_version
+        )
+        update_check_counter = 0
+        
         # Main loop
         heartbeat_counter = 0
         telemetry_counter = 0
@@ -102,6 +111,41 @@ async def main():
                 if telemetry_counter >= (config.telemetry_interval // 5):  # Check every 5 seconds
                     tracker.collect_and_send()
                     telemetry_counter = 0
+                
+                # Check for updates periodically
+                update_check_counter += 1
+                if update_check_counter >= (config.update_check_interval // 5):  # Check every 5 seconds
+                    try:
+                        update_info = update_checker.check_for_updates()
+                        if update_info:
+                            print(f"\n{'='*60}")
+                            print("UPDATE AVAILABLE!")
+                            print(f"Current Version: {config.current_version}")
+                            print(f"New Version: {update_info['latest_version']}")
+                            print(f"Changelog: {update_info.get('changelog', 'N/A')}")
+                            print(f"{'='*60}\n")
+                            
+                            # Download update
+                            download_url = update_info['download_url']
+                            file_hash = update_info.get('file_hash')
+                            
+                            zip_path = update_checker.download_update(download_url, file_hash)
+                            if zip_path:
+                                # Apply update
+                                if update_checker.apply_update(zip_path):
+                                    # Update config version
+                                    config.current_version = update_info['latest_version']
+                                    config.save()
+                                    
+                                    # Restart agent
+                                    print("Restarting agent with new version...")
+                                    await asyncio.sleep(2)  # Give time for message to display
+                                    update_checker.restart_agent()
+                    except Exception as e:
+                        print(f"Error checking for updates: {e}")
+                        # Continue running even if update check fails
+                    
+                    update_check_counter = 0
                 
                 # Wait 5 seconds before next iteration
                 await asyncio.sleep(5)

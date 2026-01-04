@@ -24,3 +24,5 @@ The backend serves these files via:
 - The installer script collects system information and registers the agent with the backend
 - After installation, the agent starts tracking productivity automatically
 
+
+
