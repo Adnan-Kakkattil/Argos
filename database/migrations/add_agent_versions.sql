@@ -23,3 +23,4 @@ CREATE TABLE IF NOT EXISTS agent_versions (
 ALTER TABLE agents ADD COLUMN current_version VARCHAR(50) DEFAULT NULL;
 ALTER TABLE agents ADD INDEX idx_current_version (current_version);
 
+

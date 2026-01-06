@@ -226,3 +226,4 @@ class UpdateChecker:
         except Exception as e:
             print(f"Error restarting agent: {e}")
 
+

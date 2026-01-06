@@ -46,3 +46,4 @@ class AgentUpdateCheckResponse(BaseModel):
     file_size: Optional[int] = None
     file_hash: Optional[str] = None
 
+

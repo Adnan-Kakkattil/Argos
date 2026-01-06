@@ -1,0 +1,123 @@
+<?xml version='1.0' encoding='windows-1252'?>
+<!--
+  PrismTrack Agent MSI Installer
+  Uses cargo-wix to build MSI for PrismTrackAgent.exe (Python executable)
+-->
+
+<?if $(sys.BUILDARCH) = x64 or $(sys.BUILDARCH) = arm64 ?>
+    <?define PlatformProgramFilesFolder = "ProgramFiles64Folder" ?>
+<?else ?>
+    <?define PlatformProgramFilesFolder = "ProgramFilesFolder" ?>
+<?endif ?>
+
+<Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
+
+    <Product
+        Id='*'
+        Name='PrismTrack Agent'
+        UpgradeCode='9C9C9C9C-9C9C-9C9C-9C9C-9C9C9C9C9C9C'
+        Manufacturer='PrismTrack'
+        Language='1033'
+        Codepage='1252'
+        Version='$(var.Version)'>
+
+        <Package Id='*'
+            Keywords='Installer'
+            Description='PrismTrack Employee Productivity Tracking Agent'
+            Manufacturer='PrismTrack'
+            InstallerVersion='450'
+            Languages='1033'
+            Compressed='yes'
+            InstallScope='perMachine'
+            SummaryCodepage='1252'
+            />
+
+        <MajorUpgrade
+            Schedule='afterInstallInitialize'
+            DowngradeErrorMessage='A newer version of [ProductName] is already installed. Setup will now exit.'/>
+
+        <Media Id='1' Cabinet='media1.cab' EmbedCab='yes' DiskPrompt='CD-ROM #1'/>
+        <Property Id='DiskPrompt' Value='PrismTrack Agent Installation'/>
+
+        <Directory Id='TARGETDIR' Name='SourceDir'>
+            <Directory Id='$(var.PlatformProgramFilesFolder)' Name='PFiles'>
+                <Directory Id='INSTALLFOLDER' Name='PrismTrack'>
+                    <Directory Id='AGENTFOLDER' Name='Agent'>
+                        
+                        <!-- PrismTrackAgent.exe -->
+                        <Component Id='AgentExe' Guid='8B8B8B8B-8B8B-8B8B-8B8B-8B8B8B8B8B8B'>
+                            <File
+                                Id='PrismTrackAgentExe'
+                                Name='PrismTrackAgent.exe'
+                                DiskId='1'
+                                Source='..\PrismTrackAgent\dist\PrismTrackAgent.exe'
+                                KeyPath='yes'/>
+                        </Component>
+                        
+                        <!-- config.json -->
+                        <Component Id='ConfigJson' Guid='7A7A7A7A-7A7A-7A7A-7A7A-7A7A7A7A7A7A'>
+                            <File
+                                Id='ConfigJson'
+                                Name='config.json'
+                                DiskId='1'
+                                Source='..\PrismTrackAgent\config.json'
+                                KeyPath='yes'/>
+                        </Component>
+                        
+                        <!-- installer_script.ps1 -->
+                        <Component Id='InstallerScript' Guid='6A6A6A6A-6A6A-6A6A-6A6A-6A6A6A6A6A6A'>
+                            <File
+                                Id='InstallerScriptPs1'
+                                Name='installer_script.ps1'
+                                DiskId='1'
+                                Source='..\installer\installer_script.ps1'
+                                KeyPath='yes'/>
+                        </Component>
+                    </Directory>
+                </Directory>
+            </Directory>
+        </Directory>
+
+        <Feature
+            Id='ProductFeature'
+            Title='PrismTrack Agent'
+            Description='Installs PrismTrack Agent for employee productivity tracking.'
+            Level='1'
+            ConfigurableDirectory='INSTALLFOLDER'
+            AllowAdvertise='no'
+            Display='expand'
+            Absent='disallow'>
+            
+            <ComponentRef Id='AgentExe'/>
+            <ComponentRef Id='ConfigJson'/>
+            <ComponentRef Id='InstallerScript'/>
+
+        </Feature>
+
+        <SetProperty Id='ARPINSTALLLOCATION' Value='[INSTALLFOLDER]' After='CostFinalize'/>
+
+        <!-- Custom Actions - Run installer script after files are installed -->
+        <!-- Note: org_id will be passed via MSI property or configured in config.json -->
+        <CustomAction Id='RunInstallerScript' 
+                      Directory='AGENTFOLDER'
+                      ExeCommand='powershell.exe -ExecutionPolicy Bypass -File "[#InstallerScriptPs1]" -OrgId "[ORG_ID]" -ApiBase "[API_BASE]"'
+                      Execute='deferred' 
+                      Impersonate='no' 
+                      Return='ignore' />
+        
+        <!-- Properties for custom action -->
+        <Property Id='ORG_ID' Value='' />
+        <Property Id='API_BASE' Value='http://localhost:8000/api/v1' />
+        
+        <!-- Installation Sequence -->
+        <InstallExecuteSequence>
+            <Custom Action='RunInstallerScript' After='InstallFiles'>NOT Installed</Custom>
+        </InstallExecuteSequence>
+
+        <UI>
+            <UIRef Id='WixUI_Minimal'/>
+        </UI>
+
+    </Product>
+
+</Wix>

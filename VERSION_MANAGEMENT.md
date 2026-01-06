@@ -268,3 +268,4 @@ SOURCE database/migrations/add_agent_versions.sql;
 - Version comparison view
 - Update statistics (how many agents updated, etc.)
 
+

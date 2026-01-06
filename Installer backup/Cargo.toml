@@ -1,0 +1,18 @@
+[package]
+name = "prismtrack-installer"
+version = "1.0.0"
+edition = "2021"
+authors = ["PrismTrack"]
+description = "MSI Installer Builder for PrismTrack Agent"
+license = "MIT"
+
+# Dummy binary for cargo-wix (not actually used in MSI)
+[[bin]]
+name = "dummy"
+path = "src/main.rs"
+
+[package.metadata.wix]
+# Suppress EULA warning
+eula = false
+# Output filename for MSI
+output = "PrismTrackAgent.msi"

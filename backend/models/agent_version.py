@@ -20,3 +20,4 @@ class AgentVersion(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     released_at = Column(DateTime(timezone=True), nullable=True)  # When version was released
 
+
